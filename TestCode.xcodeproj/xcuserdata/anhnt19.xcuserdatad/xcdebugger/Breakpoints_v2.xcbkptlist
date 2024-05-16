@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Bucket
+   uuid = "D4D2105C-C058-4C2A-88C2-102572AE91FF"
+   type = "1"
+   version = "2.0">
+   <Breakpoints>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "3C5CF5C4-1016-4FA9-A0DA-28AFD50B9A98"
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "TestCode/ViewController.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "109"
+            endingLineNumber = "109"
+            landmarkName = "draw(_:)"
+            landmarkType = "7">
+            <Locations>
+               <Location
+                  uuid = "3C5CF5C4-1016-4FA9-A0DA-28AFD50B9A98 - bcde22d81fdcefb1"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "TestCode.TimelineView2.draw(__C.CGRect) -&gt; ()"
+                  moduleName = "TestCode"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/anhnt19/Desktop/TestCode/TestCode/ViewController.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "51"
+                  endingLineNumber = "51"
+                  offsetFromSymbolStart = "848">
+               </Location>
+               <Location
+                  uuid = "3C5CF5C4-1016-4FA9-A0DA-28AFD50B9A98 - bcde22d81fdcefb1"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "TestCode.TimelineView2.draw(__C.CGRect) -&gt; ()"
+                  moduleName = "TestCode"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/anhnt19/Desktop/TestCode/TestCode/ViewController.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "51"
+                  endingLineNumber = "51"
+                  offsetFromSymbolStart = "856">
+               </Location>
+            </Locations>
+         </BreakpointContent>
+      </BreakpointProxy>
+   </Breakpoints>
+</Bucket>
