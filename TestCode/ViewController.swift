@@ -43,11 +43,13 @@ enum GapTime: Int, CaseIterable {
 
 class ViewController: UIViewController {
     
+    var seekbarView: TimeSeekBarView!
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         self.view.backgroundColor = .gray.withAlphaComponent(0.5)
         
-        let seekbarView = TimeSeekBarView()
+        seekbarView = TimeSeekBarView()
         self.view.addSubview(seekbarView)
         seekbarView.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
@@ -56,6 +58,18 @@ class ViewController: UIViewController {
             seekbarView.trailingAnchor.constraint(equalTo: self.view.trailingAnchor),
             seekbarView.heightAnchor.constraint(equalToConstant: 96)
         ])
+        
+        
+        let buttonTestOffset = UIButton()
+        buttonTestOffset.setTitle("Offset", for: .normal)
+        buttonTestOffset.addTarget(self, action: #selector(infoButtonPressed(_:)), for: .touchUpInside)
+        buttonTestOffset.frame = CGRect(x: self.view.frame.width / 2, y: 400, width: 200, height: 200)
+        self.view.addSubview(buttonTestOffset)
+    }
+    
+    @objc
+    private func infoButtonPressed(_ sender: UIButton) {
+        seekbarView.scrollToTimestamp(1500)
     }
 }
 
@@ -112,7 +126,12 @@ final class TimeSeekBarView: UIView {
         scrollView.delegate = self
         
         // Example event times (9:00-10:00 and 11:00-12:00)
-        timelineView.events = [(start: 9.0, end: 9.15), (start: 11.0, end: 11.5), (start: 18.0, end: 18.2)]
+        timelineView.events = [
+            (start: 1.0, end: 1.05),
+            (start: 9.0, end: 9.15),
+            (start: 11.0, end: 11.5),
+            (start: 18.0, end: 18.2)
+        ]
         timelineView.gapTime = gapTime
         scrollView.addSubview(timelineView)
         
@@ -153,12 +172,6 @@ final class TimeSeekBarView: UIView {
         // Pinch Gesture
         let pinchGesture = UIPinchGestureRecognizer(target: self, action: #selector(handlePinch(gesture:)))
         scrollView.addGestureRecognizer(pinchGesture)
-        
-        let buttonTestOffset = UIButton()
-        buttonTestOffset.setTitle("Offset", for: .normal)
-        buttonTestOffset.addTarget(self, action: #selector(infoButtonPressed(_:)), for: .touchUpInside)
-        buttonTestOffset.frame = CGRect(x: self.frame.width / 2, y: 400, width: 200, height: 200)
-        self.addSubview(buttonTestOffset)
     }
     
     @objc
@@ -166,7 +179,7 @@ final class TimeSeekBarView: UIView {
         guard gesture.state == .ended else { return }
         let scale: CGFloat = gesture.scale
         
-        guard scale > 1.5 && scale < 0.8 else { return }
+        guard scale > 1.5 || scale < 0.8 else { return }
         // Zoom In
         if scale > 1.5 {
             guard let previous = gapTime.previous() else { return }
@@ -186,8 +199,8 @@ final class TimeSeekBarView: UIView {
     }
     
     private func convertSecondsToHoursMinutesSeconds(seconds: Int) -> (hours: Int, minutes: Int, seconds: Int) {
-        let hours = seconds / 3600
-        let minutes = (seconds % 3600) / 60
+        let hours = seconds / 3_600
+        let minutes = (seconds % 3_600) / 60
         let seconds = seconds % 60
         return (hours, minutes, seconds)
     }
@@ -196,25 +209,43 @@ final class TimeSeekBarView: UIView {
         return String(format: "%02d:%02d:%02d", hours, minutes, seconds)
     }
     
-    /// Sửa lại duration: Set tối đa ví dụ 0.5 giây trong cả 1 ngày, duration tương ứng với quãng thời gian cần chạy
-    func scrollToOffset(offset: Double) {
+    private func secondsFromOffset(_ offset: Double) -> Int {
+        let timeOffset = offset / (timeSpacer * CGFloat(gapTime.blocksPerHour))
+        let timeSeconds = Int(timeOffset * 3_600)
+        return timeSeconds
+    }
+    
+    private func offsetFromSeconds(_ seconds: TimeInterval) -> Double {
+        return seconds / 3_600 * (timeSpacer * CGFloat(gapTime.blocksPerHour))
+    }
+    
+    func scrollToTimestamp(_ time: TimeInterval) {
+        let seconds = secondsSinceBeginningOfDay(from: time)
+        let offset = offsetFromSeconds(TimeInterval(seconds))
         DispatchQueue.main.async {
-            UIView.animate(withDuration: 0.25, delay: 0, options: .curveLinear) {
-                self.scrollView.contentOffset.x = offset
-            }
+            self.scrollView.setContentOffset(CGPoint(x: offset, y: 0), animated: true)
         }
     }
     
-    @objc
-    private func infoButtonPressed(_ sender: UIButton) {
-        scrollToOffset(offset: 1500)
+    private func secondsSinceBeginningOfDay(from unixTimestamp: TimeInterval) -> Int {
+        // Convert Unix timestamp to Date
+        let date = Date(timeIntervalSince1970: unixTimestamp)
+        // Get the current calendar
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        // Extract hour, minute, and second components from the date
+        let components = calendar.dateComponents([.hour, .minute, .second], from: date)
+        // Calculate total seconds since beginning of the day
+        let secondsSinceStartOfDay = (components.hour ?? 0) * 3_600 + (components.minute ?? 0) * 60 + (components.second ?? 0)
+        
+        return secondsSinceStartOfDay
     }
 }
 
 extension TimeSeekBarView: UIScrollViewDelegate {
     func scrollViewDidScroll(_ scrollView: UIScrollView) {
-        let timeOffset = scrollView.contentOffset.x / (timeSpacer * CGFloat(gapTime.blocksPerHour))
-        let timeSeconds = Int(timeOffset * 3600)
+        let offset = scrollView.contentOffset.x
+        let timeSeconds = secondsFromOffset(offset)
         let (hours, minutes, seconds) = convertSecondsToHoursMinutesSeconds(seconds: timeSeconds)
         let timeString = formatTimeString(hours: hours, minutes: minutes, seconds: seconds)
         timeLabel.text = "\(timeString)"
@@ -229,6 +260,30 @@ final class TimelineView: UIView {
     private let totalHours: CGFloat = 24.0
     private var totalBlocks: CGFloat { totalHours * CGFloat(gapTime.blocksPerHour) }
     
+    private var startHandle: UIView!
+    private var endHandle: UIView!
+    private var startHandleCenterX: NSLayoutConstraint!
+    private var endHandleCenterX: NSLayoutConstraint!
+    private var selectionOverlay: UIView!
+    
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        setupHandles()
+        setupSelectionOverlay()
+    }
+    
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        setupHandles()
+        setupSelectionOverlay()
+    }
+    
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        updateSelectionOverlay()
+    }
+    
+    // MARK: - Timeline
     override func draw(_ rect: CGRect) {
         super.draw(rect)
         
@@ -317,6 +372,76 @@ final class TimelineView: UIView {
         
         // Format the time string
         return String(format: "%02d:%02d", hours, minutes)
+    }
+    
+    // MARK: - Gap Selection
+    private func setupHandles() {
+        startHandle = createHandle()
+        endHandle = createHandle()
+        addSubview(startHandle)
+        addSubview(endHandle)
+        
+        startHandleCenterX = startHandle.centerXAnchor.constraint(equalTo: self.leftAnchor, constant: 100)
+        endHandleCenterX = endHandle.centerXAnchor.constraint(equalTo: self.leftAnchor, constant: 220)
+        
+        NSLayoutConstraint.activate([
+            startHandleCenterX,
+            startHandle.centerYAnchor.constraint(equalTo: self.centerYAnchor),
+            startHandle.widthAnchor.constraint(equalToConstant: 20),
+            startHandle.heightAnchor.constraint(equalToConstant: 40),
+            
+            endHandleCenterX,
+            endHandle.centerYAnchor.constraint(equalTo: self.centerYAnchor),
+            endHandle.widthAnchor.constraint(equalToConstant: 20),
+            endHandle.heightAnchor.constraint(equalToConstant: 40)
+        ])
+        
+        let startPanGesture = UIPanGestureRecognizer(target: self, action: #selector(handlePanGesture(_:)))
+        startHandle.addGestureRecognizer(startPanGesture)
+        
+        let endPanGesture = UIPanGestureRecognizer(target: self, action: #selector(handlePanGesture(_:)))
+        endHandle.addGestureRecognizer(endPanGesture)
+    }
+    
+    private func createHandle() -> UIView {
+        let handle = UIView()
+        handle.backgroundColor = .blue
+        handle.layer.cornerRadius = 10
+        handle.translatesAutoresizingMaskIntoConstraints = false
+        return handle
+    }
+    
+    @objc
+    private func handlePanGesture(_ gesture: UIPanGestureRecognizer) {
+        guard let handle = gesture.view else { return }
+        let translation = gesture.translation(in: self)
+        let newCenterX = handle.center.x + translation.x
+        
+        if handle == startHandle {
+            if newCenterX >= 0 && newCenterX <= endHandle.center.x {
+                startHandleCenterX.constant += translation.x
+            }
+        } else if handle == endHandle {
+            if newCenterX <= self.bounds.width && newCenterX >= startHandle.center.x {
+                endHandleCenterX.constant += translation.x
+            }
+        }
+        
+        gesture.setTranslation(.zero, in: self)
+    }
+    
+    private func setupSelectionOverlay() {
+        selectionOverlay = UIView()
+        selectionOverlay.backgroundColor = UIColor.green.withAlphaComponent(0.2)
+        selectionOverlay.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(selectionOverlay)
+        sendSubviewToBack(selectionOverlay)
+    }
+    
+    private func updateSelectionOverlay() {
+        let startX = startHandle.frame.midX
+        let endX = endHandle.frame.midX
+        selectionOverlay.frame = CGRect(x: startX, y: 0, width: endX - startX, height: self.frame.height)
     }
 }
 
