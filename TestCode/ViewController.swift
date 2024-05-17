@@ -29,20 +29,27 @@ extension CaseIterable where Self: Equatable, AllCases: BidirectionalCollection 
 
 // Minute
 enum GapTime: Int, CaseIterable {
-    case one        = 1
-    case five       = 5
-    case ten        = 10
-    case fifteen    = 15
-    case thirty     = 30
-    case sixty      = 60
+    /* Case                 //  blocksPerHour */
+    case one        = 1     //      60
+    case five       = 5     //      12
+    case ten        = 10    //      6
+    case fifteen    = 15    //      4
+    case thirty     = 30    //      2
+    case sixty      = 60    //      1
     
     var blocksPerHour: Int {
         GapTime.sixty.rawValue / self.rawValue
     }
 }
 
+enum TimelineMode {
+    case explore
+    case download
+}
+
 class ViewController: UIViewController {
     
+    private var testMode: TimelineMode = .explore
     var seekbarView: TimeSeekBarView!
     
     override func viewDidLoad() {
@@ -59,17 +66,34 @@ class ViewController: UIViewController {
             seekbarView.heightAnchor.constraint(equalToConstant: 96)
         ])
         
-        
+        // MARK: - TEST
         let buttonTestOffset = UIButton()
         buttonTestOffset.setTitle("Offset", for: .normal)
         buttonTestOffset.addTarget(self, action: #selector(infoButtonPressed(_:)), for: .touchUpInside)
-        buttonTestOffset.frame = CGRect(x: self.view.frame.width / 2, y: 400, width: 200, height: 200)
+        buttonTestOffset.frame = CGRect(x: 20, y: 400, width: 100, height: 100)
         self.view.addSubview(buttonTestOffset)
+        
+        let changeMode = UIButton()
+        changeMode.setTitle("Mode", for: .normal)
+        changeMode.addTarget(self, action: #selector(changeMode(_:)), for: .touchUpInside)
+        changeMode.frame = CGRect(x: self.view.frame.width / 2 + 20, y: 400, width: 100, height: 100)
+        self.view.addSubview(changeMode)
     }
     
     @objc
     private func infoButtonPressed(_ sender: UIButton) {
         seekbarView.scrollToTimestamp(1500)
+    }
+    
+    @objc
+    private func changeMode(_ sender: UIButton) {
+        if testMode == .explore {
+            testMode = .download
+        } else {
+            testMode = .explore
+        }
+        
+        seekbarView.setTimeline(to: testMode)
     }
 }
 
@@ -77,10 +101,14 @@ final class TimeSeekBarView: UIView {
     // UIView
     private let scrollView: UIScrollView = .init()
     private let timelineView: TimelineView = .init()
-    private let timeLabel: UILabel = .init()
+    private let timeView: TimeView = .init()
+    private let indicatorView: UIImageView = .init()
     // Properties
     private let timeSpacer: CGFloat = 90
     private var gapTime: GapTime = .sixty
+    private var mode: TimelineMode = .explore {
+        didSet { updateUIForTimelineMode() }
+    }
     private var extraWidth: CGFloat { self.frame.width }
     
     // MARK: - Init
@@ -106,13 +134,33 @@ final class TimeSeekBarView: UIView {
         scrollView.contentSize = timelineView.frame.size
     }
     
-    // MARK: - Setup View
+    // MARK: - Method
+    func scrollToTimestamp(_ time: TimeInterval) {
+        let seconds = secondsSinceBeginningOfDay(from: time)
+        let offset = offsetFromSeconds(TimeInterval(seconds))
+        DispatchQueue.main.async {
+            self.scrollView.setContentOffset(CGPoint(x: offset, y: 0), animated: true)
+        }
+    }
+    
+    func setTimeline(to mode: TimelineMode) {
+        self.mode = mode
+    }
+    
+    private func updateUIForTimelineMode() {
+        timeView.isHidden = mode == .download
+        indicatorView.isHidden = mode == .download
+        timelineView.setTimeline(to: mode)
+    }
+    
+    // MARK: - private function
     private func setupView() {
         // Background Color
         self.backgroundColor = .clear
         
         // ScrollView
         self.addSubview(scrollView)
+        scrollView.clipsToBounds = false
         scrollView.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
             scrollView.topAnchor.constraint(equalTo: self.topAnchor),
@@ -136,7 +184,6 @@ final class TimeSeekBarView: UIView {
         scrollView.addSubview(timelineView)
         
         // Current time indicator
-        let indicatorView = UIImageView()
         indicatorView.image = UIImage(named: "indicator_line")
         self.addSubview(indicatorView)
         indicatorView.translatesAutoresizingMaskIntoConstraints = false
@@ -147,31 +194,21 @@ final class TimeSeekBarView: UIView {
             indicatorView.centerXAnchor.constraint(equalTo: scrollView.centerXAnchor)
         ])
         
-        let timeBorderView = UIView()
-        timeBorderView.layer.cornerRadius = 12
-        timeBorderView.backgroundColor = .orange
-        self.addSubview(timeBorderView)
-        timeBorderView.translatesAutoresizingMaskIntoConstraints = false
+        self.addSubview(timeView)
+        timeView.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
-            timeBorderView.topAnchor.constraint(equalTo: scrollView.bottomAnchor, constant: 8),
-            timeBorderView.centerXAnchor.constraint(equalTo: self.centerXAnchor),
-            timeBorderView.widthAnchor.constraint(equalToConstant: 55),
-            timeBorderView.heightAnchor.constraint(equalToConstant: 24)
-        ])
-        
-        timeLabel.text = "00:00:00"
-        timeLabel.textColor = .white
-        timeLabel.font = UIFont.systemFont(ofSize: 10.0, weight: .semibold)
-        timeBorderView.addSubview(timeLabel)
-        timeLabel.translatesAutoresizingMaskIntoConstraints = false
-        NSLayoutConstraint.activate([
-            timeLabel.centerXAnchor.constraint(equalTo: timeBorderView.centerXAnchor),
-            timeLabel.centerYAnchor.constraint(equalTo: timeBorderView.centerYAnchor)
+            timeView.topAnchor.constraint(equalTo: scrollView.bottomAnchor, constant: 8),
+            timeView.centerXAnchor.constraint(equalTo: self.centerXAnchor),
+            timeView.widthAnchor.constraint(equalToConstant: 55),
+            timeView.heightAnchor.constraint(equalToConstant: 24)
         ])
         
         // Pinch Gesture
         let pinchGesture = UIPinchGestureRecognizer(target: self, action: #selector(handlePinch(gesture:)))
         scrollView.addGestureRecognizer(pinchGesture)
+        
+        // Mode
+        updateUIForTimelineMode()
     }
     
     @objc
@@ -219,14 +256,6 @@ final class TimeSeekBarView: UIView {
         return seconds / 3_600 * (timeSpacer * CGFloat(gapTime.blocksPerHour))
     }
     
-    func scrollToTimestamp(_ time: TimeInterval) {
-        let seconds = secondsSinceBeginningOfDay(from: time)
-        let offset = offsetFromSeconds(TimeInterval(seconds))
-        DispatchQueue.main.async {
-            self.scrollView.setContentOffset(CGPoint(x: offset, y: 0), animated: true)
-        }
-    }
-    
     private func secondsSinceBeginningOfDay(from unixTimestamp: TimeInterval) -> Int {
         // Convert Unix timestamp to Date
         let date = Date(timeIntervalSince1970: unixTimestamp)
@@ -248,7 +277,7 @@ extension TimeSeekBarView: UIScrollViewDelegate {
         let timeSeconds = secondsFromOffset(offset)
         let (hours, minutes, seconds) = convertSecondsToHoursMinutesSeconds(seconds: timeSeconds)
         let timeString = formatTimeString(hours: hours, minutes: minutes, seconds: seconds)
-        timeLabel.text = "\(timeString)"
+        timeView.updateTime(timeString)
     }
 }
 
@@ -257,14 +286,16 @@ final class TimelineView: UIView {
     var extraWidth: CGFloat = 0.0
     var gapTime: GapTime = .sixty
     
-    private let totalHours: CGFloat = 24.0
-    private var totalBlocks: CGFloat { totalHours * CGFloat(gapTime.blocksPerHour) }
+    private let totalHours: Int = 24
+    private var totalBlocks: Int { totalHours * gapTime.blocksPerHour }
     
     private var startHandle: UIView!
     private var endHandle: UIView!
     private var startHandleCenterX: NSLayoutConstraint!
     private var endHandleCenterX: NSLayoutConstraint!
     private var selectionOverlay: UIView!
+    private var startTimeView: TimeView = .init()
+    private var endTimeView: TimeView = .init()
     
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -281,9 +312,19 @@ final class TimelineView: UIView {
     override func layoutSubviews() {
         super.layoutSubviews()
         updateSelectionOverlay()
+        updateTimeView()
     }
     
-    // MARK: - Timeline
+    // MARK: - function
+    func setTimeline(to mode: TimelineMode) {
+        startTimeView.isHidden = mode == .explore
+        endTimeView.isHidden = mode == .explore
+        startHandle.isHidden = mode == .explore
+        endHandle.isHidden = mode == .explore
+        selectionOverlay.isHidden = mode == .explore
+    }
+    
+    // MARK: - Draw UI and private function
     override func draw(_ rect: CGRect) {
         super.draw(rect)
         
@@ -292,7 +333,7 @@ final class TimelineView: UIView {
         
         let timeWidth = rect.width - extraWidth
         let height = rect.height
-        let blockWidth = timeWidth / totalBlocks
+        let blockWidth = timeWidth / CGFloat(totalBlocks)
         
         // Background color
         context.setFillColor(UIColor.rgb(0xF9FAFB).cgColor)
@@ -300,8 +341,8 @@ final class TimelineView: UIView {
         
         // Draw event areas with gradient
         for event in events {
-            let startX = event.start / totalHours * timeWidth + extraWidth / 2
-            let endX = event.end / totalHours * timeWidth + extraWidth / 2
+            let startX = event.start / CGFloat(totalHours) * timeWidth + extraWidth / 2
+            let endX = event.end / CGFloat(totalHours) * timeWidth + extraWidth / 2
             let eventRect = CGRect(x: startX, y: 0, width: endX - startX, height: height)
             
             let gradientLayer = CAGradientLayer()
@@ -320,9 +361,9 @@ final class TimelineView: UIView {
             context.setStrokeColor(UIColor.rgb(0x818A98).cgColor)
             context.setLineWidth(1)
             
-            let x = CGFloat(timeBlock) / totalBlocks * timeWidth + extraWidth / 2
-            context.move(to: CGPoint(x: x, y: height * 0.4167))
-            context.addLine(to: CGPoint(x: x, y: 0))
+            let location_x: CGFloat = CGFloat(timeBlock) / CGFloat(totalBlocks) * timeWidth + extraWidth / 2
+            context.move(to: CGPoint(x: location_x, y: height * 0.4167))
+            context.addLine(to: CGPoint(x: location_x, y: 0))
             context.strokePath()
             
             // Draw shorter markers for each hour, dividing into 6 parts
@@ -330,22 +371,20 @@ final class TimelineView: UIView {
             for i in 1..<6 {
                 if timeBlock == totalBlocks { break }
                 
-                let subX = x + CGFloat(i) * increment
+                let subX = location_x + CGFloat(i) * increment
                 context.move(to: CGPoint(x: subX, y: height * 0.1))
                 context.addLine(to: CGPoint(x: subX, y: 0))
                 context.strokePath()
             }
             
-            let timeFormat = timeBlock / CGFloat(gapTime.blocksPerHour)
-            let timeString = String(format: "%05.2f", timeFormat)
-            let timeWithMinute: String = convertToTimeString(timeString) ?? "Invalid"
-            
+            // label
+            let timeWithMinute = convertBlockToTime(timeBlock, scale: gapTime.blocksPerHour)
             let attributes: [NSAttributedString.Key: Any] = [
                 .font: UIFont.systemFont(ofSize: 10.0, weight: .semibold),
                 .foregroundColor: UIColor.black
             ]
             let size = timeWithMinute.size(withAttributes: attributes)
-            timeWithMinute.draw(at: CGPoint(x: x - size.width / 2, y: height - size.height - (height * 0.05)), withAttributes: attributes)
+            timeWithMinute.draw(at: CGPoint(x: location_x - size.width / 2, y: height - size.height - (height * 0.05)), withAttributes: attributes)
         }
     }
     
@@ -358,19 +397,10 @@ final class TimelineView: UIView {
         return image
     }
     
-    private func convertToTimeString(_ timeString: String) -> String? {
-        // Split the string into hours and fractional part
-        let components = timeString.split(separator: ".")
-        guard components.count == 2,
-              let hours = Int(components[0]),
-              let fraction = Int(components[1]) else {
-            return nil
-        }
+    private func convertBlockToTime(_ block: Int, scale: Int) -> String {
+        let hours = block / scale
+        let minutes = (block % scale) * 60 / scale
         
-        // Convert the fractional part to minutes
-        let minutes = Int(Double("0.\(fraction)")! * 60)
-        
-        // Format the time string
         return String(format: "%02d:%02d", hours, minutes)
     }
     
@@ -381,19 +411,18 @@ final class TimelineView: UIView {
         addSubview(startHandle)
         addSubview(endHandle)
         
-        startHandleCenterX = startHandle.centerXAnchor.constraint(equalTo: self.leftAnchor, constant: 100)
-        endHandleCenterX = endHandle.centerXAnchor.constraint(equalTo: self.leftAnchor, constant: 220)
-        
+        startHandleCenterX = startHandle.centerXAnchor.constraint(equalTo: self.leftAnchor, constant: 300)
+        endHandleCenterX = endHandle.centerXAnchor.constraint(equalTo: self.leftAnchor, constant: 350)
         NSLayoutConstraint.activate([
+            startHandle.topAnchor.constraint(equalTo: self.topAnchor),
+            startHandle.bottomAnchor.constraint(equalTo: self.bottomAnchor),
+            startHandle.widthAnchor.constraint(equalToConstant: 16),
             startHandleCenterX,
-            startHandle.centerYAnchor.constraint(equalTo: self.centerYAnchor),
-            startHandle.widthAnchor.constraint(equalToConstant: 20),
-            startHandle.heightAnchor.constraint(equalToConstant: 40),
             
-            endHandleCenterX,
-            endHandle.centerYAnchor.constraint(equalTo: self.centerYAnchor),
-            endHandle.widthAnchor.constraint(equalToConstant: 20),
-            endHandle.heightAnchor.constraint(equalToConstant: 40)
+            endHandle.topAnchor.constraint(equalTo: self.topAnchor),
+            endHandle.bottomAnchor.constraint(equalTo: self.bottomAnchor),
+            endHandle.widthAnchor.constraint(equalToConstant: 16),
+            endHandleCenterX
         ])
         
         let startPanGesture = UIPanGestureRecognizer(target: self, action: #selector(handlePanGesture(_:)))
@@ -401,14 +430,38 @@ final class TimelineView: UIView {
         
         let endPanGesture = UIPanGestureRecognizer(target: self, action: #selector(handlePanGesture(_:)))
         endHandle.addGestureRecognizer(endPanGesture)
+        
+        addSubview(startTimeView)
+        addSubview(endTimeView)
     }
     
     private func createHandle() -> UIView {
-        let handle = UIView()
-        handle.backgroundColor = .blue
-        handle.layer.cornerRadius = 10
+        let container = UIView()
+        container.backgroundColor = .clear
+        
+        let divider = UIView()
+        divider.backgroundColor = .orange
+        container.addSubview(divider)
+        divider.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            divider.topAnchor.constraint(equalTo: container.topAnchor),
+            divider.bottomAnchor.constraint(equalTo: container.bottomAnchor),
+            divider.centerXAnchor.constraint(equalTo: container.centerXAnchor),
+            divider.widthAnchor.constraint(equalToConstant: 1)
+        ])
+        
+        let handle = UIImageView(image: UIImage(named: "handle"))
+        container.addSubview(handle)
         handle.translatesAutoresizingMaskIntoConstraints = false
-        return handle
+        NSLayoutConstraint.activate([
+            handle.widthAnchor.constraint(equalToConstant: 16),
+            handle.heightAnchor.constraint(equalToConstant: 16),
+            handle.centerXAnchor.constraint(equalTo: container.centerXAnchor),
+            handle.centerYAnchor.constraint(equalTo: container.centerYAnchor)
+        ])
+        
+        container.translatesAutoresizingMaskIntoConstraints = false
+        return container
     }
     
     @objc
@@ -417,14 +470,12 @@ final class TimelineView: UIView {
         let translation = gesture.translation(in: self)
         let newCenterX = handle.center.x + translation.x
         
-        if handle == startHandle {
-            if newCenterX >= 0 && newCenterX <= endHandle.center.x {
-                startHandleCenterX.constant += translation.x
-            }
-        } else if handle == endHandle {
-            if newCenterX <= self.bounds.width && newCenterX >= startHandle.center.x {
-                endHandleCenterX.constant += translation.x
-            }
+        if handle == startHandle, newCenterX >= extraWidth/2 && newCenterX <= endHandle.center.x {
+            startHandleCenterX.constant += translation.x
+        }
+        
+        if handle == endHandle, newCenterX <= (self.bounds.width - extraWidth/2) && newCenterX >= startHandle.center.x {
+            endHandleCenterX.constant += translation.x
         }
         
         gesture.setTranslation(.zero, in: self)
@@ -432,7 +483,7 @@ final class TimelineView: UIView {
     
     private func setupSelectionOverlay() {
         selectionOverlay = UIView()
-        selectionOverlay.backgroundColor = UIColor.green.withAlphaComponent(0.2)
+        selectionOverlay.backgroundColor = UIColor.gray.withAlphaComponent(0.2)
         selectionOverlay.translatesAutoresizingMaskIntoConstraints = false
         addSubview(selectionOverlay)
         sendSubviewToBack(selectionOverlay)
@@ -442,6 +493,62 @@ final class TimelineView: UIView {
         let startX = startHandle.frame.midX
         let endX = endHandle.frame.midX
         selectionOverlay.frame = CGRect(x: startX, y: 0, width: endX - startX, height: self.frame.height)
+    }
+    
+    private func updateTimeView() {
+        let startX = startHandle.frame.midX
+        startTimeView.frame = CGRect(x: startX - 27.5, y: frame.height + 8, width: 55, height: 24)
+        startTimeView.updateTime(String(format: "%05.2f", startX))
+        
+        let endX = endHandle.frame.midX
+        endTimeView.frame = CGRect(x: endX - 27.5, y: frame.height + 8, width: 55, height: 24)
+        endTimeView.updateTime(String(format: "%05.2f", endX))
+    }
+}
+
+final class TimeView: UIView {
+    private let timeBorderView = UIView()
+    private let timeLabel = UILabel()
+    
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        setupView()
+    }
+    
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        setupView()
+    }
+    
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        timeBorderView.layer.cornerRadius = self.frame.height / 2
+    }
+    
+    private func setupView() {
+        timeBorderView.backgroundColor = .orange
+        self.addSubview(timeBorderView)
+        timeBorderView.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            timeBorderView.topAnchor.constraint(equalTo: self.topAnchor),
+            timeBorderView.bottomAnchor.constraint(equalTo: self.bottomAnchor),
+            timeBorderView.leadingAnchor.constraint(equalTo: self.leadingAnchor),
+            timeBorderView.rightAnchor.constraint(equalTo: self.rightAnchor)
+        ])
+        
+        timeLabel.text = "00:00:00"
+        timeLabel.textColor = .white
+        timeLabel.font = UIFont.systemFont(ofSize: 10.0, weight: .semibold)
+        timeBorderView.addSubview(timeLabel)
+        timeLabel.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            timeLabel.centerXAnchor.constraint(equalTo: timeBorderView.centerXAnchor),
+            timeLabel.centerYAnchor.constraint(equalTo: timeBorderView.centerYAnchor)
+        ])
+    }
+    
+    func updateTime(_ value: String) {
+        timeLabel.text = value
     }
 }
 
