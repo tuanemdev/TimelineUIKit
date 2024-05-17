@@ -7,6 +7,11 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		F86DCAF02BF85FED009F982B /* OHTimelineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F86DCAEF2BF85FED009F982B /* OHTimelineView.swift */; };
+		F86DCAF22BF86025009F982B /* OHTimeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F86DCAF12BF86025009F982B /* OHTimeView.swift */; };
+		F86DCAF42BF86067009F982B /* OHTimeSeekBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F86DCAF32BF86067009F982B /* OHTimeSeekBarView.swift */; };
+		F86DCAF72BF863FF009F982B /* OHTimelineGapTime.swift in Sources */ = {isa = PBXBuildFile; fileRef = F86DCAF62BF863FF009F982B /* OHTimelineGapTime.swift */; };
+		F86DCAF92BF86498009F982B /* OHTimelineMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = F86DCAF82BF86498009F982B /* OHTimelineMode.swift */; };
 		F89D1A9B2BF3ADFE00968D29 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F89D1A9A2BF3ADFE00968D29 /* AppDelegate.swift */; };
 		F89D1A9D2BF3ADFE00968D29 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F89D1A9C2BF3ADFE00968D29 /* SceneDelegate.swift */; };
 		F89D1A9F2BF3ADFE00968D29 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F89D1A9E2BF3ADFE00968D29 /* ViewController.swift */; };
@@ -16,6 +21,11 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		F86DCAEF2BF85FED009F982B /* OHTimelineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OHTimelineView.swift; sourceTree = "<group>"; };
+		F86DCAF12BF86025009F982B /* OHTimeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OHTimeView.swift; sourceTree = "<group>"; };
+		F86DCAF32BF86067009F982B /* OHTimeSeekBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OHTimeSeekBarView.swift; sourceTree = "<group>"; };
+		F86DCAF62BF863FF009F982B /* OHTimelineGapTime.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OHTimelineGapTime.swift; sourceTree = "<group>"; };
+		F86DCAF82BF86498009F982B /* OHTimelineMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OHTimelineMode.swift; sourceTree = "<group>"; };
 		F89D1A972BF3ADFE00968D29 /* TestCode.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TestCode.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		F89D1A9A2BF3ADFE00968D29 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		F89D1A9C2BF3ADFE00968D29 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
@@ -37,6 +47,26 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		F86DCAEE2BF85F97009F982B /* OHTimeSeekBarView */ = {
+			isa = PBXGroup;
+			children = (
+				F86DCAF52BF8639E009F982B /* OHTimelineObject */,
+				F86DCAF32BF86067009F982B /* OHTimeSeekBarView.swift */,
+				F86DCAEF2BF85FED009F982B /* OHTimelineView.swift */,
+				F86DCAF12BF86025009F982B /* OHTimeView.swift */,
+			);
+			path = OHTimeSeekBarView;
+			sourceTree = "<group>";
+		};
+		F86DCAF52BF8639E009F982B /* OHTimelineObject */ = {
+			isa = PBXGroup;
+			children = (
+				F86DCAF62BF863FF009F982B /* OHTimelineGapTime.swift */,
+				F86DCAF82BF86498009F982B /* OHTimelineMode.swift */,
+			);
+			path = OHTimelineObject;
+			sourceTree = "<group>";
+		};
 		F89D1A8E2BF3ADFE00968D29 = {
 			isa = PBXGroup;
 			children = (
@@ -56,6 +86,7 @@
 		F89D1A992BF3ADFE00968D29 /* TestCode */ = {
 			isa = PBXGroup;
 			children = (
+				F86DCAEE2BF85F97009F982B /* OHTimeSeekBarView */,
 				F89D1A9A2BF3ADFE00968D29 /* AppDelegate.swift */,
 				F89D1A9C2BF3ADFE00968D29 /* SceneDelegate.swift */,
 				F89D1A9E2BF3ADFE00968D29 /* ViewController.swift */,
@@ -138,9 +169,14 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F86DCAF02BF85FED009F982B /* OHTimelineView.swift in Sources */,
 				F89D1A9F2BF3ADFE00968D29 /* ViewController.swift in Sources */,
+				F86DCAF92BF86498009F982B /* OHTimelineMode.swift in Sources */,
+				F86DCAF42BF86067009F982B /* OHTimeSeekBarView.swift in Sources */,
 				F89D1A9B2BF3ADFE00968D29 /* AppDelegate.swift in Sources */,
+				F86DCAF72BF863FF009F982B /* OHTimelineGapTime.swift in Sources */,
 				F89D1A9D2BF3ADFE00968D29 /* SceneDelegate.swift in Sources */,
+				F86DCAF22BF86025009F982B /* OHTimeView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -292,6 +328,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = UZVJXS2K9J;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = TestCode/Info.plist;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -320,6 +357,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = UZVJXS2K9J;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = TestCode/Info.plist;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
