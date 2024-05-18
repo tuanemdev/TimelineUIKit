@@ -7,6 +7,12 @@
 
 import UIKit
 
+// MARK: - Delegate
+protocol OHTimeSeekBarViewDelegate: AnyObject {
+    func timeSeekBarView(_ timeSeekBarView: OHTimeSeekBarView, endAt unixTimestamp: Int)
+}
+
+// MARK: - OHTimeSeekBarView
 final class OHTimeSeekBarView: UIView {
     // UIView
     private let scrollView: UIScrollView = .init()
@@ -23,7 +29,11 @@ final class OHTimeSeekBarView: UIView {
     // To fix the discrepancy between the values of setContentOffset and scrollView.contentOffset in scrollViewDidScroll(_:)
     private var isProgrammaticScroll = false
     // Save current timeStamp
+    private var timeIntervalSince1970ToMidnight: Int = 0
     private var timeIntervalSince00h00: Int = 0
+    
+    // MARK: - Delegate
+    weak var delegate: OHTimeSeekBarViewDelegate?
     
     // MARK: - Init
     override init(frame: CGRect) {
@@ -51,22 +61,27 @@ final class OHTimeSeekBarView: UIView {
     
     // MARK: - Method
     func scrollToTimestamp(_ time: TimeInterval, animated: Bool = true) {
-        let secondsSBoD = secondsSinceBeginningOfDay(from: time)
+        let secondsSBoD = OHTimelineUtils.secondsSinceBeginningOfDay(from: time)
         let offset = offsetFromSeconds(TimeInterval(secondsSBoD))
         isProgrammaticScroll = true
         scrollView.setContentOffset(CGPoint(x: offset, y: 0), animated: animated)
         // If not animated, reset the flag immediately
         if !animated { isProgrammaticScroll = false }
         // Update time label
-        let (hours, minutes, seconds) = convertSecondsToHoursMinutesSeconds(seconds: secondsSBoD)
-        let timeString = formatTimeString(hours: hours, minutes: minutes, seconds: seconds)
+        let (hours, minutes, seconds) = OHTimelineUtils.convertSecondsToHoursMinutesSeconds(seconds: secondsSBoD)
+        let timeString = OHTimelineUtils.formatTimeString(hours: hours, minutes: minutes, seconds: seconds)
         timeView.updateTime(timeString)
         // Save current time
+        timeIntervalSince1970ToMidnight = OHTimelineUtils.timeIntervalSince1970ToMidnight(from: time)
         timeIntervalSince00h00 = secondsSBoD
     }
     
     func setTimeline(to mode: OHTimelineMode) {
         self.mode = mode
+    }
+    
+    func setupEvents(_ events: [OHTimelineEvent]) {
+        timelineView.events = events
     }
     
     // MARK: - private function
@@ -88,14 +103,6 @@ final class OHTimeSeekBarView: UIView {
         scrollView.showsHorizontalScrollIndicator = false
         scrollView.showsVerticalScrollIndicator = false
         scrollView.delegate = self
-        
-        // Example event times (9:00-10:00 and 11:00-12:00)
-        timelineView.events = [
-            (start: 1.0, end: 1.05),
-            (start: 9.0, end: 9.15),
-            (start: 11.0, end: 11.5),
-            (start: 18.0, end: 18.2)
-        ]
         timelineView.gapTime = gapTime
         scrollView.addSubview(timelineView)
         
@@ -158,17 +165,6 @@ final class OHTimeSeekBarView: UIView {
     }
     
     // MARK: - Utils
-    private func convertSecondsToHoursMinutesSeconds(seconds: Int) -> (hours: Int, minutes: Int, seconds: Int) {
-        let hours = seconds / 3_600
-        let minutes = (seconds % 3_600) / 60
-        let seconds = seconds % 60
-        return (hours, minutes, seconds)
-    }
-    
-    private func formatTimeString(hours: Int, minutes: Int, seconds: Int) -> String {
-        return String(format: "%02d:%02d:%02d", hours, minutes, seconds)
-    }
-    
     private func secondsFromOffset(_ offset: Double) -> Int {
         let timeOffset = offset / (timeSpacer * CGFloat(gapTime.blocksPerHour))
         let timeSeconds = Int(timeOffset * 3_600)
@@ -178,20 +174,6 @@ final class OHTimeSeekBarView: UIView {
     private func offsetFromSeconds(_ seconds: TimeInterval) -> Double {
         return seconds * (timeSpacer * CGFloat(gapTime.blocksPerHour)) / 3_600
     }
-    
-    private func secondsSinceBeginningOfDay(from unixTimestamp: TimeInterval) -> Int {
-        // Convert Unix timestamp to Date
-        let date = Date(timeIntervalSince1970: unixTimestamp)
-        // Get the current calendar
-        var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
-        // Extract hour, minute, and second components from the date
-        let components = calendar.dateComponents([.hour, .minute, .second], from: date)
-        // Calculate total seconds since beginning of the day
-        let secondsSinceStartOfDay = (components.hour ?? 0) * 3_600 + (components.minute ?? 0) * 60 + (components.second ?? 0)
-        
-        return secondsSinceStartOfDay
-    }
 }
 
 // MARK: - UIScrollViewDelegate
@@ -200,8 +182,8 @@ extension OHTimeSeekBarView: UIScrollViewDelegate {
         guard !isProgrammaticScroll else { return }
         let offset = scrollView.contentOffset.x
         let timeSeconds = secondsFromOffset(offset)
-        let (hours, minutes, seconds) = convertSecondsToHoursMinutesSeconds(seconds: timeSeconds)
-        let timeString = formatTimeString(hours: hours, minutes: minutes, seconds: seconds)
+        let (hours, minutes, seconds) = OHTimelineUtils.convertSecondsToHoursMinutesSeconds(seconds: timeSeconds)
+        let timeString = OHTimelineUtils.formatTimeString(hours: hours, minutes: minutes, seconds: seconds)
         timeView.updateTime(timeString)
         // Save current time
         timeIntervalSince00h00 = timeSeconds
@@ -209,6 +191,20 @@ extension OHTimeSeekBarView: UIScrollViewDelegate {
     
     func scrollViewDidEndScrollingAnimation(_ scrollView: UIScrollView) {
         isProgrammaticScroll = false
+    }
+    
+    func scrollViewDidEndDragging(_ scrollView: UIScrollView, willDecelerate decelerate: Bool) {
+        guard !decelerate else { return }
+        scrollViewDidEndScrolling()
+    }
+    
+    func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
+        scrollViewDidEndScrolling()
+    }
+    
+    private func scrollViewDidEndScrolling() {
+        guard mode == .explore else { return }
+        delegate?.timeSeekBarView(self, endAt: timeIntervalSince1970ToMidnight + timeIntervalSince00h00)
     }
 }
 

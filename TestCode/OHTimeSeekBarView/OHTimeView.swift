@@ -8,8 +8,8 @@
 import UIKit
 
 final class OHTimeView: UIView {
-    private let timeBorderView = UIView()
-    private let timeLabel = UILabel()
+    private let timeBorderView: UIView = .init()
+    private let timeLabel: UILabel = .init()
     
     override init(frame: CGRect) {
         super.init(frame: frame)

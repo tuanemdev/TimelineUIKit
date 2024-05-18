@@ -8,7 +8,7 @@
 import UIKit
 
 final class OHTimelineView: UIView {
-    var events: [(start: CGFloat, end: CGFloat)] = []
+    var events: [OHTimelineEvent] = .init()
     var extraWidth: CGFloat = 0.0
     var gapTime: OHTimelineGapTime = .sixty
     
@@ -67,8 +67,8 @@ final class OHTimelineView: UIView {
         
         // Draw event areas with gradient
         for event in events {
-            let startX = event.start / CGFloat(totalHours) * timeWidth + extraWidth / 2
-            let endX = event.end / CGFloat(totalHours) * timeWidth + extraWidth / 2
+            let startX = CGFloat(event.startTime) / CGFloat(86_400) * timeWidth + extraWidth / 2
+            let endX = CGFloat(event.endTime) / CGFloat(86_400) * timeWidth + extraWidth / 2
             let eventRect = CGRect(x: startX, y: 0, width: endX - startX, height: height)
             
             let gradientLayer = CAGradientLayer()
@@ -225,15 +225,15 @@ final class OHTimelineView: UIView {
         let startX = startHandle.frame.midX
         startTimeView.frame = CGRect(x: startX - 27.5, y: frame.height + 8, width: 55, height: 24)
         let startTimePos = secondsFromPosition(startX)
-        let startHMS = convertSecondsToHoursMinutesSeconds(seconds: startTimePos)
-        let startFormattedTime = formatTimeString(hours: startHMS.hours, minutes: startHMS.minutes, seconds: startHMS.seconds)
+        let startHMS = OHTimelineUtils.convertSecondsToHoursMinutesSeconds(seconds: startTimePos)
+        let startFormattedTime = OHTimelineUtils.formatTimeString(hours: startHMS.hours, minutes: startHMS.minutes, seconds: startHMS.seconds)
         startTimeView.updateTime(startFormattedTime)
         
         let endX = endHandle.frame.midX
         endTimeView.frame = CGRect(x: endX - 27.5, y: frame.height + 8, width: 55, height: 24)
         let endTimePos = secondsFromPosition(endX)
-        let endHMS = convertSecondsToHoursMinutesSeconds(seconds: endTimePos)
-        let endFormattedTime = formatTimeString(hours: endHMS.hours, minutes: endHMS.minutes, seconds: endHMS.seconds)
+        let endHMS = OHTimelineUtils.convertSecondsToHoursMinutesSeconds(seconds: endTimePos)
+        let endFormattedTime = OHTimelineUtils.formatTimeString(hours: endHMS.hours, minutes: endHMS.minutes, seconds: endHMS.seconds)
         endTimeView.updateTime(endFormattedTime)
     }
     
@@ -242,16 +242,5 @@ final class OHTimelineView: UIView {
         let timePosition = (position - extraWidth/2) / (self.frame.size.width - extraWidth)
         let timeSeconds = Int(timePosition * 86_400)
         return timeSeconds
-    }
-    
-    private func convertSecondsToHoursMinutesSeconds(seconds: Int) -> (hours: Int, minutes: Int, seconds: Int) {
-        let hours = seconds / 3_600
-        let minutes = (seconds % 3_600) / 60
-        let seconds = seconds % 60
-        return (hours, minutes, seconds)
-    }
-    
-    private func formatTimeString(hours: Int, minutes: Int, seconds: Int) -> String {
-        return String(format: "%02d:%02d:%02d", hours, minutes, seconds)
     }
 }

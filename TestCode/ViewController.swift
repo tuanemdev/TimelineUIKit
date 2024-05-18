@@ -10,6 +10,10 @@ import UIKit
 class ViewController: UIViewController {
     
     private var testMode: OHTimelineMode = .explore
+    private var testEvents: [OHTimelineEvent] = [
+        .init(startUnixTimestamp: 1500, endUnixTimestamp: 1590),
+        .init(startUnixTimestamp: 1800, endUnixTimestamp: 2000),
+    ]
     var seekbarView: OHTimeSeekBarView!
     
     override func viewDidLoad() {
@@ -17,6 +21,8 @@ class ViewController: UIViewController {
         self.view.backgroundColor = .gray.withAlphaComponent(0.5)
         
         seekbarView = OHTimeSeekBarView()
+        seekbarView.setupEvents(testEvents)
+        seekbarView.delegate = self
         self.view.addSubview(seekbarView)
         seekbarView.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
@@ -42,7 +48,7 @@ class ViewController: UIViewController {
     
     @objc
     private func infoButtonPressed(_ sender: UIButton) {
-        seekbarView.scrollToTimestamp(1500)
+        seekbarView.scrollToTimestamp(1716013284)
     }
     
     @objc
@@ -54,6 +60,12 @@ class ViewController: UIViewController {
         }
         
         seekbarView.setTimeline(to: testMode)
+    }
+}
+
+extension ViewController: OHTimeSeekBarViewDelegate {
+    func timeSeekBarView(_ timeSeekBarView: OHTimeSeekBarView, endAt unixTimestamp: Int) {
+        print("Stop at: \(unixTimestamp)")
     }
 }
 
